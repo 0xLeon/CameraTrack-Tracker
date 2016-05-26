@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string-array name="tracker_names">
+		<item>Gyro Accelerometer Magnetic Default</item>
+		<item>Gyro Accelerometer Magnetic Netive</item>
+		<item>Rotation Vector Linear Acceleration Default</item>
+	</string-array>
+
+	<string-array name="tracker_identifiers">
+		<item>0</item>
+		<item>1</item>
+		<item>2</item>
+	</string-array>
+</resources>

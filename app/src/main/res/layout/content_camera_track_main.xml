@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:descendantFocusability="beforeDescendants"
+    android:focusableInTouchMode="true"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context=".activity.CameraTrackMain"
+    tools:showIn="@layout/activity_camera_track_main">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/tShotName"
+        android:id="@+id/tShotName"
+        android:layout_marginTop="21dp"
+        android:layout_marginLeft="21dp"
+        android:layout_marginStart="21dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/etShotName"
+        android:layout_alignTop="@+id/tShotName"
+        android:layout_toRightOf="@+id/tShotName"
+        android:layout_marginLeft="55dp"
+        android:layout_marginStart="55dp"
+        android:inputType="text"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:selectAllOnFocus="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/tShotNumber"
+        android:id="@+id/tShotNumber"
+        android:layout_below="@+id/etShotName"
+        android:layout_alignLeft="@+id/tShotName"
+        android:layout_alignStart="@+id/tShotName"
+        android:layout_marginTop="22dp" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:ems="10"
+        android:id="@+id/etShotNumber"
+        android:layout_alignTop="@+id/tShotNumber"
+        android:layout_alignLeft="@+id/etShotName"
+        android:layout_alignStart="@+id/etShotName"
+        android:text="1" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/btStartStop_Start"
+        android:id="@+id/btStartStop"
+        android:layout_below="@+id/etShotNumber"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="41dp" />
+
+</RelativeLayout>

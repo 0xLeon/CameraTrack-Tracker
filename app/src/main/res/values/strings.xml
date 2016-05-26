@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">CameraTrack</string>
+	<string name="action_settings">Settings</string>
+	<string name="tShotName">Shot Name</string>
+	<string name="tShotNumber">Shot Number</string>
+	<string name="btStartStop_Start">Start</string>
+	<string name="btStartStop_Stop">Stop</string>
+
+	<string name="errorStoragePermissionNotGranted">Permission to access external storage was not granted</string>
+	<string name="externalStorageUnavailable">External storage is not available</string>
+	<string name="errorGenericIO">IO error</string>
+	<string name="errorDirectoryNameAlreadyExists">File with that directory name already exists</string>
+	<string name="errorFileAlreadyExists">File with that name already exists</string>
+	<string name="errorFolderNotCreatable">Couldn\'t create tracking data folder</string>
+	<string name="errorFileNotCreateable">Couldn\'t create tracking file</string>
+	<string name="errorInvalidShotName">Invalid shot name</string>
+	<string name="errorInvalidShotNumber">Invalid shot number</string>
+	<string name="errorUnsupportedTrackerType">Unsupported camera tracker type</string>
+	<string name="errorGenericTracking">Tracking error</string>
+
+	<string name="errorGyroSensorNotFound">Gyro sensor not found</string>
+	<string name="errorAccelSensorNotFound">Acceleration sensor not found</string>
+	<string name="errorMagnetSensorNotFound">Magnetic field sensor not found</string>
+	<string name="errorRotationSensorNotFound">Rotation sensor not found</string>
+	<string name="errorLinearAccelSensorNotFound">Linear acceleration sensor not found</string>
+	<string name="errorCouldntStartSensor">Couldn\'t start sensor</string>
+	<string name="errorSensorUnreliable">Sensor reports unreliable data</string>
+
+	<!-- TODO: Remove or change this placeholder text -->
+	<string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
