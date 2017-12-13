@@ -11,10 +11,10 @@ Global
 		Release|Android = Release|Android
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{94ECDA9D-02B4-46DC-BF38-CE9BB72E6C4E}.Debug|Android.ActiveCfg = Debug|Win32
-		{94ECDA9D-02B4-46DC-BF38-CE9BB72E6C4E}.Debug|Android.Build.0 = Debug|Win32
-		{94ECDA9D-02B4-46DC-BF38-CE9BB72E6C4E}.Release|Android.ActiveCfg = Release|Win32
-		{94ECDA9D-02B4-46DC-BF38-CE9BB72E6C4E}.Release|Android.Build.0 = Release|Win32
+		{94ECDA9D-02B4-46DC-BF38-CE9BB72E6C4E}.Debug|Android.ActiveCfg = Debug|ARM
+		{94ECDA9D-02B4-46DC-BF38-CE9BB72E6C4E}.Debug|Android.Build.0 = Debug|ARM
+		{94ECDA9D-02B4-46DC-BF38-CE9BB72E6C4E}.Release|Android.ActiveCfg = Release|ARM
+		{94ECDA9D-02B4-46DC-BF38-CE9BB72E6C4E}.Release|Android.Build.0 = Release|ARM
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
