@@ -24,14 +24,24 @@ public class GyroAccelMagnetNativeTracker extends AbstractTracker {
 
 	@Override
 	public void startTracking() throws CameraTrackException {
+		if (this.startNativeTracking() != 0) {
+			throw new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorGenericTracking));
+		}
+	}
+
+	@Override
+	public void startRecording() throws CameraTrackException {
 		try {
-			if (this.startNativeTracking(this.getAdapter().getTrackingFile().getCanonicalPath()) != 0) {
-				throw new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorGenericTracking));
-			}
+			this.startNativeRecording(this.getAdapter().getTrackingFile().getCanonicalPath());
 		}
 		catch (IOException e) {
-			this.getAdapter().handleError(new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorGenericIO)));
+			throw new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorGenericIO));
 		}
+	}
+
+	@Override
+	public void stopRecording() {
+		this.stopNativeRecording();
 	}
 
 	@Override
@@ -40,16 +50,33 @@ public class GyroAccelMagnetNativeTracker extends AbstractTracker {
 	}
 
 	/**
-	 * Starts the sensors and saves the tracking data into a file.
+	 * Starts the sensors.
 	 * Main loop of this thread happens in native code.
 	 *
-	 * @param trackingFilePath File to save the tracking data into
-	 * @return Error code
+	 * @return	Error code
 	 */
-	private native int startNativeTracking(String trackingFilePath);
+	private native int startNativeTracking();
 
 	/**
 	 *
 	 */
 	private native void stopNativeTracking();
+
+	/**
+	 * Initias writing of sensor data to a local file.
+	 *
+	 * @return	Error code
+	 */
+	private native int startNativeRecording(String trackingFilePath);
+
+	/**
+	 *
+	 */
+	private native void stopNativeRecording();
+
+	@Override
+	public @NonNull
+	TrackerAdapter.TrackerType getTrackerType() {
+		return TrackerAdapter.TrackerType.GAM_NATIVE;
+	}
 }

@@ -18,6 +18,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -27,8 +28,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.leon.hfu.cameratrack.CameraTracker;
-import com.leon.hfu.cameratrack.CameraTrackerAdapter;
+import com.leon.hfu.cameratrack.TrackerAdapter;
 import com.leon.hfu.cameratrack.R;
 import com.leon.hfu.cameratrack.exception.CameraTrackException;
 
@@ -52,13 +52,16 @@ public class CameraTrackMain extends AppCompatActivity {
 	private Button btStartStop = null;
 
 	private boolean trackingRunning = false;
-	private CameraTrackerAdapter trackerAdapter = null;
+	private TrackerAdapter trackerAdapter = null;
 
 	private Handler messageHandler = null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		Log.v(TAG, "onCreate");
+
 		this.setContentView(R.layout.activity_camera_track_main);
 
 		PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
@@ -92,13 +95,15 @@ public class CameraTrackMain extends AppCompatActivity {
 		this.messageHandler = new Handler(Looper.getMainLooper()) {
 			@Override
 			public void handleMessage(Message message) {
+				CameraTrackMain $this = CameraTrackMain.this;
+
 				switch (message.what) {
 					case -1:
-						Toast.makeText(CameraTrackMain.this.getApplicationContext(), ((Exception) message.obj).getMessage(), Toast.LENGTH_SHORT).show();
+						Toast.makeText($this.getApplicationContext(), ((Exception) message.obj).getMessage(), Toast.LENGTH_SHORT).show();
 
-						CameraTrackMain.this.activateUIElements();
-						CameraTrackMain.this.trackerAdapter = null;
-						CameraTrackMain.this.trackingRunning = false;
+						$this.activateUIElements();
+						$this.trackerAdapter.stopRecording();
+						$this.trackingRunning = false;
 
 						break;
 				}
@@ -108,43 +113,83 @@ public class CameraTrackMain extends AppCompatActivity {
 		this.btStartStop.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View view) {
+				CameraTrackMain $this = CameraTrackMain.this;
+
 				if (CameraTrackMain.this.trackingRunning) {
-					CameraTrackMain.this.activateUIElements();
-					CameraTrackMain.this.trackerAdapter.stopTracking();
-					CameraTrackMain.this.trackerAdapter = null;
-					CameraTrackMain.this.trackingRunning = false;
+					$this.activateUIElements();
+					$this.trackerAdapter.stopRecording();
+					$this.trackingRunning = false;
 				}
 				else {
 					try {
-						CameraTrackMain.this.sShotName = CameraTrackMain.this.etShotName.getText().toString();
-						CameraTrackMain.this.iShotNumber = Integer.parseInt(CameraTrackMain.this.etShotNumber.getText().toString());
+						$this.sShotName = $this.etShotName.getText().toString();
+						$this.iShotNumber = Integer.parseInt($this.etShotNumber.getText().toString());
 
-						if (CameraTrackMain.this.sShotName.length() < 1) {
-							throw new CameraTrackException(CameraTrackMain.this.getApplicationContext().getString(R.string.errorInvalidShotName));
+						if ($this.sShotName.length() < 1) {
+							throw new CameraTrackException($this.getApplicationContext().getString(R.string.errorInvalidShotName));
 						}
 
-						if (CameraTrackMain.this.iShotNumber < 1) {
+						if ($this.iShotNumber < 1) {
 							throw new NumberFormatException();
 						}
 
-						CameraTracker.CameraTrackerType trackerType = CameraTracker.CameraTrackerType.values()[Integer.parseInt(CameraTrackMain.this.prefs.getString("pref_trackerType", "-1"))];
-						CameraTrackMain.this.trackerAdapter = new CameraTrackerAdapter(CameraTrackMain.this.getApplicationContext(), CameraTrackMain.this.messageHandler, trackerType, CameraTrackMain.this.sShotName, CameraTrackMain.this.iShotNumber);
-						CameraTrackMain.this.trackerAdapter.startTracking();
+						$this.trackerAdapter.setTrackingFileData($this.sShotName, $this.iShotNumber);
+						$this.trackerAdapter.startRecording();
 
-						CameraTrackMain.this.trackingRunning = true;
+						$this.trackingRunning = true;
 
-						CameraTrackMain.this.deactivateUIElements();
+						$this.deactivateUIElements();
 					}
 					catch (NumberFormatException e) {
-						Toast.makeText(CameraTrackMain.this, R.string.errorInvalidShotNumber, Toast.LENGTH_SHORT).show();
+						Toast.makeText($this, R.string.errorInvalidShotNumber, Toast.LENGTH_SHORT).show();
 					}
 					catch (CameraTrackException | IOException e) {
-						CameraTrackMain.this.trackerAdapter = null;
-						Toast.makeText(CameraTrackMain.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+						$this.trackerAdapter.stopRecording();
+						Toast.makeText($this, e.getMessage(), Toast.LENGTH_SHORT).show();
 					}
 				}
 			}
 		});
+	}
+
+	@Override
+	public void onStart() {
+		super.onStart();
+
+		Log.v(TAG, "onStart");
+
+		if (null != this.trackerAdapter) {
+			this.trackerAdapter.stopTracking();
+		}
+
+		try {
+			this.trackerAdapter = new TrackerAdapter(this.getApplicationContext(), this.messageHandler, TrackerAdapter.TrackerType.values()[Integer.parseInt(CameraTrackMain.this.prefs.getString("pref_trackerType", "-1"))]);
+			this.trackerAdapter.startTracking();
+		}
+		catch (CameraTrackException | IOException e) {
+			this.trackerAdapter = null;
+			Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	@Override
+	public void onStop() {
+		super.onStop();
+
+		Log.v(TAG, "onStop");
+
+		if (null != this.trackerAdapter) {
+			this.trackerAdapter.stopTracking();
+		}
+
+		this.trackerAdapter = null;
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+
+		Log.v(TAG, "onDestroy");
 	}
 
 	private void activateUIElements() {

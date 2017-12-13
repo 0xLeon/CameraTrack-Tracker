@@ -8,7 +8,7 @@
 #include <android/sensor.h>
 #include "cameratracker.h"
 
-#define TAG		"CameraTrackTrackerNative"
+#define TAG		"GAMNative-jni"
 
 #define LOGI(...)	((void) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__))
 #define LOGE(...)	((void) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__))
@@ -19,19 +19,19 @@
 #define LOGV(...)	((void) 0U)
 #endif
 
-static sensor_server_p createSensorServer(JNIEnv* env, jstring jTrackingFilePath);
+static sensor_server_p createSensorServer();
 static void runSensorServer();
 static void closeSensorServer();
 static int enableSensors();
 
-static int sensor_callback(int fd, int events, void* data);
+static int sensorEventQueueCallback(int fd, int events, void* data);
 
 sensor_server_p sensorServer = NULL;
 
-JNIEXPORT jint JNICALL Java_com_leon_hfu_cameratrack_NativeCameraTracker_startNativeTracking(JNIEnv* env, jclass inClass, jstring jTrackingFilePath) {
-	LOGV("JNI Call, Build time: %s", __TIME__);
+JNIEXPORT jint JNICALL Java_com_leon_hfu_cameratrack_tracker_GyroAccelMagnetNativeTracker_startNativeTracking(JNIEnv* env, jclass inClass) {
+	LOGV("%s", "Starting tracker");
 
-	if (NULL == createSensorServer(env, jTrackingFilePath)) {
+	if (NULL == createSensorServer()) {
 		return 1U;
 	}
 
@@ -42,16 +42,55 @@ JNIEXPORT jint JNICALL Java_com_leon_hfu_cameratrack_NativeCameraTracker_startNa
 	return 0U;
 }
 
-JNIEXPORT void JNICALL Java_com_leon_hfu_cameratrack_NativeCameraTracker_stopNativeTracking(JNIEnv* env, jclass inClass) {
-	LOGV("%s", "Attempting sensor server stopping");
+JNIEXPORT jint JNICALL Java_com_leon_hfu_cameratrack_tracker_GyroAccelMagnetNativeTracker_startNativeRecording(JNIEnv* env, jclass inClass, jstring jTrackingFilePath) {
+	LOGV("%s", "Starting recording");
 
-	sensorServer->destroyRequested = 1U;
-	
-	LOGV("%s", "Attempted sensor server stopping");
+	sensorServer->trackingFilePath = (*env)->GetStringUTFChars(env, jTrackingFilePath, 0U);
+	sensorServer->trackingFile = fopen(sensorServer->trackingFilePath, "w+");
+
+	if (NULL == sensorServer->trackingFile) {
+		LOGE("Couldn't open tracking file for writing");
+		return 1U;
+	}
+
+	fprintf(sensorServer->trackingFile, "%d\n", (int) GAM_NATIVE);
+
+	pthread_mutex_lock(sensorServer->mutex);
+
+	sensorServer->writeData = 1U;
+
+	pthread_mutex_unlock(sensorServer->mutex);
+
+	return 0U;
 }
 
-static sensor_server_p createSensorServer(JNIEnv* env, jstring jTrackingFilePath) {
-	LOGV("%s", "Creating sensor server");
+JNIEXPORT void JNICALL Java_com_leon_hfu_cameratrack_tracker_GyroAccelMagnetNativeTracker_stopNativeRecording(JNIEnv* env, jclass inClass) {
+	LOGV("%s", "Stopping recording");
+	
+	pthread_mutex_lock(sensorServer->mutex);
+
+	sensorServer->writeData = 0U;
+
+	pthread_mutex_unlock(sensorServer->mutex);
+
+	if (NULL != sensorServer->trackingFile) {
+		fflush(sensorServer->trackingFile);
+		fclose(sensorServer->trackingFile);
+		sensorServer->trackingFile = NULL;
+		sensorServer->trackingFilePath = NULL;
+	}
+
+	LOGV("%s", "Stopped native recording");
+}
+
+JNIEXPORT void JNICALL Java_com_leon_hfu_cameratrack_tracker_GyroAccelMagnetNativeTracker_stopNativeTracking(JNIEnv* env, jclass inClass) {
+	LOGV("%s", "Stopping tracker");
+
+	sensorServer->destroyRequested = 1U;
+}
+
+static sensor_server_p createSensorServer() {
+	LOGV("%s", "Creating tracker");
 	
 	sensorServer = (sensor_server_p) malloc(sizeof(sensor_server_t));
 
@@ -63,6 +102,9 @@ static sensor_server_p createSensorServer(JNIEnv* env, jstring jTrackingFilePath
 	memset(sensorServer, 0U, sizeof(sensor_server_t));
 
 	sensorServer->destroyRequested = 0U;
+	sensorServer->writeData = 0U;
+	sensorServer->trackingFile = NULL;
+	sensorServer->trackingFilePath = NULL;
 
 	sensorServer->looper = ALooper_prepare(0U);
 
@@ -84,20 +126,10 @@ static sensor_server_p createSensorServer(JNIEnv* env, jstring jTrackingFilePath
 		return NULL;
 	}
 
-	sensorServer->sensorEventQueue = ASensorManager_createEventQueue(sensorServer->sensorManager, sensorServer->looper, ALOOPER_POLL_CALLBACK, sensor_callback, (void*) sensorServer);
+	sensorServer->sensorEventQueue = ASensorManager_createEventQueue(sensorServer->sensorManager, sensorServer->looper, ALOOPER_POLL_CALLBACK, sensorEventQueueCallback, (void*) sensorServer);
 
 	if (NULL == sensorServer->sensorEventQueue) {
 		LOGE("Couldn't create sensor event queue");
-		free(sensorServer);
-		return NULL;
-	}
-
-	sensorServer->trackingFilePath = (*env)->GetStringUTFChars(env, jTrackingFilePath, 0U);
-	sensorServer->trackingFile = fopen(sensorServer->trackingFilePath, "w+");
-
-	if (NULL == sensorServer->trackingFile) {
-		LOGE("Couldn't open tracking file for writing");
-		ASensorManager_destroyEventQueue(sensorServer->sensorManager, sensorServer->sensorEventQueue);
 		free(sensorServer);
 		return NULL;
 	}
@@ -107,7 +139,6 @@ static sensor_server_p createSensorServer(JNIEnv* env, jstring jTrackingFilePath
 	if (NULL == sensorServer->mutex) {
 		LOGE("Couldn't create sensor server mutex");
 		ASensorManager_destroyEventQueue(sensorServer->sensorManager, sensorServer->sensorEventQueue);
-		fclose(sensorServer->trackingFile);
 		free(sensorServer);
 		return NULL;
 	}
@@ -115,15 +146,12 @@ static sensor_server_p createSensorServer(JNIEnv* env, jstring jTrackingFilePath
 	if (0U != pthread_mutex_init(sensorServer->mutex, NULL)) {
 		LOGE("Couldn't initialize sensor server mutex");
 		ASensorManager_destroyEventQueue(sensorServer->sensorManager, sensorServer->sensorEventQueue);
-		fclose(sensorServer->trackingFile);
 		free(sensorServer->mutex);
 		free(sensorServer);
 		return NULL;
 	}
 
-	fprintf(sensorServer->trackingFile, "%d\n", (int) GAM_NATIVE);
-
-	LOGV("%s", "Created sensor server");
+	LOGV("%s", "Created tracker");
 
 	return sensorServer;
 }
@@ -131,14 +159,14 @@ static sensor_server_p createSensorServer(JNIEnv* env, jstring jTrackingFilePath
 static void runSensorServer() {
 	enableSensors();
 
+	LOGV("%s", "Started tracker");
+
 	while (!sensorServer->destroyRequested) {
 		ALooper_pollAll(0U, NULL, NULL, NULL);
 	}
 }
 
 static void closeSensorServer() {
-	LOGV("%s", "Before sensor server close");
-
 	sensorServer->sensorsEnabledAll = 0U;
 
 	pthread_mutex_lock(sensorServer->mutex);
@@ -149,17 +177,22 @@ static void closeSensorServer() {
 
 	ASensorManager_destroyEventQueue(sensorServer->sensorManager, sensorServer->sensorEventQueue);
 
-	fclose(sensorServer->trackingFile);
+	if (NULL != sensorServer->trackingFile) {
+		fflush(sensorServer->trackingFile);
+		fclose(sensorServer->trackingFile);
+		sensorServer->trackingFile = NULL;
+		sensorServer->trackingFilePath = NULL;
+	}
 
 	pthread_mutex_unlock(sensorServer->mutex);
 
 	free(sensorServer);
 	sensorServer = NULL;
 
-	LOGV("%s", "After sensor server close");
+	LOGV("%s", "Stopped tracker");
 }
 
-static int sensor_callback(int fd, int events, void* data) {
+static int sensorEventQueueCallback(int fd, int events, void* data) {
 	if (sensorServer->destroyRequested) {
 		return 0U;
 	}
@@ -171,7 +204,7 @@ static int sensor_callback(int fd, int events, void* data) {
 			return 0U;
 		}
 
-		if (!sensorServer->sensorsEnabledAll) {
+		if (!sensorServer->sensorsEnabledAll || !sensorServer->writeData) {
 			continue;
 		}
 
@@ -190,6 +223,8 @@ static int sensor_callback(int fd, int events, void* data) {
 }
 
 static int enableSensors() {
+	LOGV("%s", "Enabling sensors");
+	
 	pthread_mutex_lock(sensorServer->mutex);
 
 	int errorCode = 0U;
@@ -235,4 +270,6 @@ static int enableSensors() {
 	sensorServer->sensorsEnabledAll = 1U;
 
 	pthread_mutex_unlock(sensorServer->mutex);
+
+	LOGV("%s", "Enabled sensors");
 }

@@ -18,6 +18,7 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  *
@@ -30,6 +31,7 @@ public abstract class AbstractNonNativeTracker extends AbstractTracker implement
 	private SensorManager sensorManager = null;
 	private List<Sensor> sensors = null;
 	private volatile boolean sensorsEnabledAll = false;
+	private volatile boolean writeData = false;
 
 	public AbstractNonNativeTracker(@NonNull TrackerAdapter adapter) {
 		super(adapter);
@@ -40,15 +42,6 @@ public abstract class AbstractNonNativeTracker extends AbstractTracker implement
 		this.sensorManager = (SensorManager) this.getAdapter().getContext().getSystemService(Context.SENSOR_SERVICE);
 
 		this.findSensors();
-
-		try {
-			this.trackFile = new PrintStream(new BufferedOutputStream(new FileOutputStream(this.getAdapter().getTrackingFile())));
-			this.trackFile.printf("%d\n", this.getTrackerType().ordinal());
-		}
-		catch (FileNotFoundException e) {
-			throw new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorGenericIO));
-		}
-
 		this.enableSensors();
 
 		while (this.sensorsEnabledAll) {
@@ -62,8 +55,45 @@ public abstract class AbstractNonNativeTracker extends AbstractTracker implement
 	}
 
 	@Override
+	public void startRecording() throws CameraTrackException {
+		try {
+			this.trackFile = new PrintStream(new BufferedOutputStream(new FileOutputStream(this.getAdapter().getTrackingFile())));
+			this.trackFile.printf("%d\n", this.getTrackerType().ordinal());
+		}
+		catch (FileNotFoundException e) {
+			throw new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorGenericIO));
+		}
+
+		this.writeData = true;
+	}
+
+	@Override
+	public void stopRecording() {
+		this.writeData = false;
+
+		if (null != this.trackFile) {
+			this.trackFile.flush();
+			this.trackFile.close();
+			this.trackFile = null;
+		}
+	}
+
+	@Override
+	public void stopTracking() throws CameraTrackException {
+		Log.v(this.getTag(), "Stopping tracking");
+
+		this.disableSensors();
+
+		synchronized (this) {
+			this.notify();
+		}
+
+		Log.v(this.getTag(), "Stopped tracking");
+	}
+
+	@Override
 	public void onSensorChanged(SensorEvent sensorEvent) {
-		if (!this.sensorsEnabledAll) {
+		if (!this.sensorsEnabledAll || !this.writeData) {
 			return;
 		}
 
@@ -82,29 +112,13 @@ public abstract class AbstractNonNativeTracker extends AbstractTracker implement
 
 		synchronized (this.sensorManager) {
 			// Timestamp / SensorType / dataX / dataY / dataZ
-			this.trackFile.printf("%d\t%d\t%f\t%f\t%f\n", sensorEvent.timestamp, sensorEvent.sensor.getType(), sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
+			this.trackFile.printf(Locale.ROOT, "%d\t%d\t%.16f\t%.16f\t%.16f\n", sensorEvent.timestamp, sensorEvent.sensor.getType(), sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
 		}
 	}
 
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
 		// do nothing
-	}
-
-	@Override
-	public void stopTracking() throws CameraTrackException {
-		Log.v(this.getTag(), "Stopping tracking");
-
-		this.disableSensors();
-
-		this.trackFile.close();
-		this.trackFile = null;
-
-		synchronized (this) {
-			this.notify();
-		}
-
-		Log.v(this.getTag(), "Stopped tracking");
 	}
 
 	private void findSensors() throws CameraTrackException {
@@ -161,8 +175,6 @@ public abstract class AbstractNonNativeTracker extends AbstractTracker implement
 	}
 
 	public abstract @NonNull int[] getUsedSensorTypes();
-
-	public abstract @NonNull TrackerType getTrackerType();
 
 	public abstract @NonNull String getTag();
 }

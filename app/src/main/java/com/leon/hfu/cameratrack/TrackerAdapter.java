@@ -7,12 +7,11 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.leon.hfu.cameratrack.tracker.AbstractTracker;
-import com.leon.hfu.cameratrack.tracker.AbstractTracker.CameraTrackerType;
 import com.leon.hfu.cameratrack.exception.CameraTrackException;
-import com.leon.hfu.cameratrack.tracker.GyroAccelMagnetCameraTracker;
-import com.leon.hfu.cameratrack.tracker.GyroAccelMagnetNativeCameraTracker;
+import com.leon.hfu.cameratrack.tracker.GyroAccelMagnetTracker;
+import com.leon.hfu.cameratrack.tracker.GyroAccelMagnetNativeTracker;
 import com.leon.hfu.cameratrack.tracker.GyroLinearTracker;
-import com.leon.hfu.cameratrack.tracker.RotationLinearCameraTracker;
+import com.leon.hfu.cameratrack.tracker.RotationLinearTracker;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,6 +23,13 @@ import java.util.Locale;
 public class TrackerAdapter {
 	public static final String TAG = "TrackerAdapter";
 
+	public enum TrackerType {
+		RL_DEFAULT,
+		GL_DEFAULT,
+		GAM_DEFAULT,
+		GAM_NATIVE,
+	}
+
 	private String shotName = "";
 	private int shotNumber = 0;
 	private File trackingDirectory = null;
@@ -31,23 +37,13 @@ public class TrackerAdapter {
 
 	private Context context = null;
 	private Handler messageHandler = null;
-	private CameraTrackerType trackerType;
+	private TrackerType trackerType;
 	private AbstractTracker tracker = null;
 
-	public TrackerAdapter(@NonNull Context context, @NonNull Handler messageHandler, CameraTrackerType trackerType, @NonNull String shotName, int shotNumber) throws CameraTrackException {
+	public TrackerAdapter(@NonNull Context context, @NonNull Handler messageHandler, TrackerType trackerType) {
 		this.context = context;
 		this.messageHandler = messageHandler;
 		this.trackerType = trackerType;
-		this.shotName = shotName;
-		this.shotNumber = shotNumber;
-
-		if (this.shotName.length() < 1) {
-			throw new CameraTrackException(this.context.getString(R.string.errorInvalidShotName));
-		}
-
-		if (this.shotNumber < 1) {
-			throw new CameraTrackException(this.context.getString(R.string.errorInvalidShotNumber));
-		}
 	}
 
 	public String getShotName() {
@@ -70,30 +66,44 @@ public class TrackerAdapter {
 		return this.tracker;
 	}
 
-	public CameraTrackerType getTrackerType() {
+	public TrackerType getTrackerType() {
 		return this.trackerType;
+	}
+
+	public void setTrackingFileData(@NonNull String shotName, int shotNumber) throws CameraTrackException, IOException {
+		this.shotName = shotName;
+		this.shotNumber = shotNumber;
+
+		if (this.shotName.length() < 1) {
+			throw new CameraTrackException(this.context.getString(R.string.errorInvalidShotName));
+		}
+
+		if (this.shotNumber < 1) {
+			throw new CameraTrackException(this.context.getString(R.string.errorInvalidShotNumber));
+		}
+
+		this.checkTrackingFile();
 	}
 
 	public synchronized void startTracking() throws IOException, CameraTrackException {
 		this.checkDirectory();
-		this.checkTrackingFile();
 
 		switch (this.trackerType) {
-			case GAM_DEFAULT:
-				this.tracker = new GyroAccelMagnetCameraTracker(this);
-				Log.d(TAG, "GAM Default");
-				break;
-			case GAM_NATIVE:
-				this.tracker = new GyroAccelMagnetNativeCameraTracker(this);
-				Log.d(TAG, "GAM Native");
-				break;
 			case RL_DEFAULT:
-				this.tracker = new RotationLinearCameraTracker(this);
+				this.tracker = new RotationLinearTracker(this);
 				Log.d(TAG, "RL Default");
 				break;
 			case GL_DEFAULT:
 				this.tracker = new GyroLinearTracker(this);
 				Log.d(TAG, "GL Default");
+				break;
+			case GAM_DEFAULT:
+				this.tracker = new GyroAccelMagnetTracker(this);
+				Log.d(TAG, "GAM Default");
+				break;
+			case GAM_NATIVE:
+				this.tracker = new GyroAccelMagnetNativeTracker(this);
+				Log.d(TAG, "GAM Native");
 				break;
 			default:
 				throw new CameraTrackException(this.context.getString(R.string.errorUnsupportedTrackerType));
@@ -102,8 +112,17 @@ public class TrackerAdapter {
 		this.tracker.start();
 	}
 
+	public synchronized void startRecording() throws CameraTrackException {
+		this.tracker.startRecording();
+	}
+
+	public synchronized void stopRecording() {
+		this.tracker.stopRecording();
+	}
+
 	public synchronized void stopTracking() {
 		try {
+			this.tracker.stopRecording();
 			this.tracker.stopTracking();
 		}
 		catch (CameraTrackException e) {
@@ -114,8 +133,7 @@ public class TrackerAdapter {
 			try {
 				this.tracker.join();
 			}
-			catch (InterruptedException e) {
-			}
+			catch (InterruptedException e) { }
 		}
 
 		this.tracker = null;

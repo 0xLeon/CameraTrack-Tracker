@@ -6,6 +6,12 @@
 	<string name="tShotNumber">Shot Number</string>
 	<string name="btStartStop_Start">Start</string>
 	<string name="btStartStop_Stop">Stop</string>
+	<string name="cameraTracker">Camera Tracker</string>
+
+	<string name="trackerRLDefault">Rotation Vector / Linear Acceleration Default</string>
+	<string name="trackerGLDefault">Gyro / Linear Acceleration Default</string>
+	<string name="trackerGAMDefault">Gyro / Accelerometer / Magnetic Default</string>
+	<string name="trackerGAMNative">Gyro / Accelerometer / Magnetic Native</string>
 
 	<string name="errorStoragePermissionNotGranted">Permission to access external storage was not granted</string>
 	<string name="externalStorageUnavailable">External storage is not available</string>

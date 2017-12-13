@@ -10,17 +10,19 @@ extern "C" {
 #endif
 
 enum CameraTrackerType {
+	RL_DEFAULT,
+	GL_DEFAULT,
 	GAM_DEFAULT,
 	GAM_NATIVE,
-	RL_DEFAULT
 };
 
 typedef struct sensor_server {
 	int destroyRequested;
+	int writeData;
 
 	ASensorManager* sensorManager;
 	ASensorEventQueue* sensorEventQueue;
-	const ASensor* sensors[3];
+	const ASensor* sensors[3U];
 	int sensorsEnabledAll;
 
 	const char* trackingFilePath;
