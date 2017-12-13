@@ -1,7 +1,9 @@
-package com.leon.hfu.cameratrack;
+package com.leon.hfu.cameratrack.tracker;
 
 import android.support.annotation.NonNull;
 
+import com.leon.hfu.cameratrack.TrackerAdapter;
+import com.leon.hfu.cameratrack.R;
 import com.leon.hfu.cameratrack.exception.CameraTrackException;
 
 import java.io.IOException;
@@ -9,14 +11,14 @@ import java.io.IOException;
 /**
  *
  */
-public class NativeCameraTracker extends CameraTracker {
-	public static final String TAG = "NativeCameraTracker";
+public class GyroAccelMagnetNativeTracker extends AbstractTracker {
+	public static final String TAG = "GyroAccelMagnetNativeTracker";
 
 	static {
 		System.loadLibrary("cameratracker");
 	}
 
-	public NativeCameraTracker(@NonNull CameraTrackerAdapter adapter) {
+	public GyroAccelMagnetNativeTracker(@NonNull TrackerAdapter adapter) {
 		super(adapter);
 	}
 

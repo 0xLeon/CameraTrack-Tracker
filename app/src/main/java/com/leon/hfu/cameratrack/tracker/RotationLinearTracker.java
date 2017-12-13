@@ -1,4 +1,4 @@
-package com.leon.hfu.cameratrack;
+package com.leon.hfu.cameratrack.tracker;
 
 import android.content.Context;
 import android.hardware.Sensor;
@@ -8,6 +8,8 @@ import android.hardware.SensorManager;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.leon.hfu.cameratrack.TrackerAdapter;
+import com.leon.hfu.cameratrack.R;
 import com.leon.hfu.cameratrack.exception.CameraTrackException;
 
 import java.io.BufferedOutputStream;
@@ -20,7 +22,7 @@ import java.util.List;
 /**
  *
  */
-public class RotationLinearCameraTracker extends CameraTracker implements SensorEventListener {
+public class RotationLinearTracker extends AbstractTracker implements SensorEventListener {
 	public static final String TAG = "RLCameraTracker";
 
 	private PrintStream trackingFile = null;
@@ -29,7 +31,7 @@ public class RotationLinearCameraTracker extends CameraTracker implements Sensor
 	private List<Sensor> sensors = new ArrayList<>(2);
 	private volatile boolean sensorsEnabledAll = false;
 
-	public RotationLinearCameraTracker(@NonNull CameraTrackerAdapter adapter) {
+	public RotationLinearTracker(@NonNull TrackerAdapter adapter) {
 		super(adapter);
 	}
 
@@ -41,7 +43,7 @@ public class RotationLinearCameraTracker extends CameraTracker implements Sensor
 
 		try {
 			this.trackingFile = new PrintStream(new BufferedOutputStream(new FileOutputStream(this.getAdapter().getTrackingFile())));
-			this.trackingFile.printf("%d\n", CameraTrackerType.RL_DEFAULT.ordinal());
+			this.trackingFile.printf("%d\n", TrackerType.RL_DEFAULT.ordinal());
 		}
 		catch (FileNotFoundException e) {
 			throw new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorGenericIO));

@@ -1,4 +1,4 @@
-package com.leon.hfu.cameratrack;
+package com.leon.hfu.cameratrack.tracker;
 
 import android.content.Context;
 import android.hardware.Sensor;
@@ -8,11 +8,11 @@ import android.hardware.SensorManager;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.leon.hfu.cameratrack.CameraTracker;
+import com.leon.hfu.cameratrack.CameraTrackerAdapter;
+import com.leon.hfu.cameratrack.R;
 import com.leon.hfu.cameratrack.exception.CameraTrackException;
 
-import java.io.BufferedOutputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,43 +20,22 @@ import java.util.List;
 /**
  *
  */
-public class DefaultCameraTracker extends CameraTracker implements SensorEventListener {
-	public static final String TAG = "DefaultCameraTracker";
+public class GyroLinearTracker extends CameraTracker implements SensorEventListener {
+	public static final String TAG = "GLTracker";
 
 	private PrintStream trackingFile = null;
 
 	private SensorManager sensorManager = null;
-	private List<Sensor> sensors = new ArrayList<>(3);
+	private List<Sensor> sensors = new ArrayList<>(2);
 	private volatile boolean sensorsEnabledAll = false;
 
-	public DefaultCameraTracker(@NonNull CameraTrackerAdapter adapter) {
+	public GyroLinearTracker(@NonNull CameraTrackerAdapter adapter) {
 		super(adapter);
 	}
 
 	@Override
 	public void startTracking() throws CameraTrackException {
 		this.sensorManager = (SensorManager) this.getAdapter().getContext().getSystemService(Context.SENSOR_SERVICE);
-
-		this.findSensors();
-
-		try {
-			this.trackingFile = new PrintStream(new BufferedOutputStream(new FileOutputStream(this.getAdapter().getTrackingFile())));
-			this.trackingFile.printf("%d\n", CameraTrackerType.GAM_DEFAULT.ordinal());
-		}
-		catch (FileNotFoundException e) {
-			throw new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorGenericIO));
-		}
-
-		this.enableSensors();
-
-		while (this.sensorsEnabledAll) {
-			synchronized (this) {
-				try {
-					this.wait();
-				}
-				catch (InterruptedException e) { }
-			}
-		}
 	}
 
 	@Override
@@ -81,21 +60,7 @@ public class DefaultCameraTracker extends CameraTracker implements SensorEventLi
 			return;
 		}
 
-		if (sensorEvent.accuracy == SensorManager.SENSOR_STATUS_UNRELIABLE) {
-			this.getAdapter().handleError(new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorSensorUnreliable)));
-
-			try {
-				this.stopTracking();
-			}
-			catch (CameraTrackException e) {
-				this.getAdapter().handleError(e);
-			}
-
-			return;
-		}
-
 		synchronized (this.sensorManager) {
-			// Timestamp / SensorType / dataX / dataY / dataZ
 			this.trackingFile.printf("%d\t%d\t%f\t%f\t%f\n", sensorEvent.timestamp, sensorEvent.sensor.getType(), sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
 		}
 	}
@@ -116,15 +81,9 @@ public class DefaultCameraTracker extends CameraTracker implements SensorEventLi
 		}
 		this.sensors.add(sensor);
 
-		sensor = this.sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+		sensor = this.sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 		if (null == sensor) {
-			throw new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorAccelSensorNotFound));
-		}
-		this.sensors.add(sensor);
-
-		sensor = this.sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-		if (null == sensor) {
-			throw new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorMagnetSensorNotFound));
+			throw new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorLinearAccelSensorNotFound));
 		}
 		this.sensors.add(sensor);
 
@@ -139,11 +98,6 @@ public class DefaultCameraTracker extends CameraTracker implements SensorEventLi
 		}
 
 		if (!this.sensorManager.registerListener(this, this.sensors.get(1), SensorManager.SENSOR_DELAY_FASTEST)) {
-			this.sensorManager.unregisterListener(this);
-			throw new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorCouldntStartSensor));
-		}
-
-		if (!this.sensorManager.registerListener(this, this.sensors.get(2), SensorManager.SENSOR_DELAY_FASTEST)) {
 			this.sensorManager.unregisterListener(this);
 			throw new CameraTrackException(this.getAdapter().getContext().getString(R.string.errorCouldntStartSensor));
 		}

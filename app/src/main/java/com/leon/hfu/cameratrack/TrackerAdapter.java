@@ -6,8 +6,13 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.leon.hfu.cameratrack.CameraTracker.CameraTrackerType;
+import com.leon.hfu.cameratrack.tracker.AbstractTracker;
+import com.leon.hfu.cameratrack.tracker.AbstractTracker.CameraTrackerType;
 import com.leon.hfu.cameratrack.exception.CameraTrackException;
+import com.leon.hfu.cameratrack.tracker.GyroAccelMagnetCameraTracker;
+import com.leon.hfu.cameratrack.tracker.GyroAccelMagnetNativeCameraTracker;
+import com.leon.hfu.cameratrack.tracker.GyroLinearTracker;
+import com.leon.hfu.cameratrack.tracker.RotationLinearCameraTracker;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,8 +21,8 @@ import java.util.Locale;
 /**
  *
  */
-public class CameraTrackerAdapter {
-	public static final String TAG = "CameraTrackerAdapter";
+public class TrackerAdapter {
+	public static final String TAG = "TrackerAdapter";
 
 	private String shotName = "";
 	private int shotNumber = 0;
@@ -27,9 +32,9 @@ public class CameraTrackerAdapter {
 	private Context context = null;
 	private Handler messageHandler = null;
 	private CameraTrackerType trackerType;
-	private CameraTracker tracker = null;
+	private AbstractTracker tracker = null;
 
-	public CameraTrackerAdapter(@NonNull Context context, @NonNull Handler messageHandler, CameraTrackerType trackerType, @NonNull String shotName, int shotNumber) throws CameraTrackException {
+	public TrackerAdapter(@NonNull Context context, @NonNull Handler messageHandler, CameraTrackerType trackerType, @NonNull String shotName, int shotNumber) throws CameraTrackException {
 		this.context = context;
 		this.messageHandler = messageHandler;
 		this.trackerType = trackerType;
@@ -61,7 +66,7 @@ public class CameraTrackerAdapter {
 		return this.context;
 	}
 
-	public CameraTracker getTracker() {
+	public AbstractTracker getTracker() {
 		return this.tracker;
 	}
 
@@ -75,16 +80,20 @@ public class CameraTrackerAdapter {
 
 		switch (this.trackerType) {
 			case GAM_DEFAULT:
-				this.tracker = new DefaultCameraTracker(this);
+				this.tracker = new GyroAccelMagnetCameraTracker(this);
 				Log.d(TAG, "GAM Default");
 				break;
 			case GAM_NATIVE:
-				this.tracker = new NativeCameraTracker(this);
+				this.tracker = new GyroAccelMagnetNativeCameraTracker(this);
 				Log.d(TAG, "GAM Native");
 				break;
 			case RL_DEFAULT:
 				this.tracker = new RotationLinearCameraTracker(this);
 				Log.d(TAG, "RL Default");
+				break;
+			case GL_DEFAULT:
+				this.tracker = new GyroLinearTracker(this);
+				Log.d(TAG, "GL Default");
 				break;
 			default:
 				throw new CameraTrackException(this.context.getString(R.string.errorUnsupportedTrackerType));

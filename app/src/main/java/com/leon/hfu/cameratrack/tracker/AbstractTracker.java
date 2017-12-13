@@ -1,15 +1,16 @@
-package com.leon.hfu.cameratrack;
+package com.leon.hfu.cameratrack.tracker;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.leon.hfu.cameratrack.CameraTrackerAdapter;
 import com.leon.hfu.cameratrack.exception.CameraTrackException;
 
 /**
  *
  */
-public abstract class CameraTracker extends Thread {
-	public static final String TAG = "CameraTracker";
+public abstract class AbstractTracker extends Thread {
+	public static final String TAG = "AbstractTracker";
 
 	private CameraTrackerAdapter adapter = null;
 
@@ -17,9 +18,10 @@ public abstract class CameraTracker extends Thread {
 		GAM_DEFAULT,
 		GAM_NATIVE,
 		RL_DEFAULT,
+		GL_DEFAULT,
 	}
 
-	public CameraTracker(@NonNull CameraTrackerAdapter adapter) {
+	public AbstractTracker(@NonNull CameraTrackerAdapter adapter) {
 		this.adapter = adapter;
 	}
 
